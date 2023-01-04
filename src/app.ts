@@ -53,15 +53,46 @@ class ProjecInput {
     this.attach();
   }
 
+  private gatherUserInput(): [string, string, number] | void {
+    const enteredTitle = this.titleInputElement.value;
+    const enteredDescription = this.descriptionInputElement.value;
+    const enteredPeople = this.peopleInputElement.value;
+
+    if (
+      enteredTitle.trim().length === 0 ||
+      enteredDescription.trim().length === 0 ||
+      enteredPeople.trim().length === 0
+    ) {
+      alert("Invalid input, please try again!");
+      return; //return nothing because otherwise TS looks for a tuple to be returned and can't find it. Also add the void type as a return type
+    } else {
+      return [enteredTitle, enteredDescription, +enteredPeople];
+    }
+  }
+
+  private clearInputs() {
+    this.titleInputElement.value = "";
+    this.descriptionInputElement.value = "";
+    this.peopleInputElement.value = "";
+  }
+
   @Autobind
   private submitHandler(event: Event) {
     event.preventDefault();
 
-    console.log(this.titleInputElement.value);
+    const userInput = this.gatherUserInput();
+
+    //checking if the input is an array because a tuple doesn't really exist in TS/JS and a tuple in the end is an array. So, if this returns true, it means we have a tuple
+    if (Array.isArray(userInput)) {
+      const [title, description, people] = userInput;
+      console.log(title, description, people);
+    }
+
+    this.clearInputs();
   }
 
   // private configure() {
-  //   //the this keyword here refers to the class so when bind is called with this, submitHandler will also point to the same thing
+  //   //the this keyword here refers to the class so when bind is called with this, submitHandler will also point to the same thing. We can use decorators instead
   //   this.element.addEventListener("submit", this.submitHandler.bind(this));
   // }
 
