@@ -1,3 +1,44 @@
+//Project State Management
+class ProjectState {
+  private listeners: any[] = [];
+  private projects: any[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addListener(listenerFn: Function) {
+    this.listeners.push(listenerFn);
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title: title,
+      description: description,
+      people: numOfPeople,
+    };
+
+    this.projects.push(newProject);
+
+    for (const listenerFn of this.listeners) {
+      //pass a copy of the array
+      listenerFn(this.projects.slice());
+    }
+  }
+}
+
+//a global instance of project state so that the methods in this class can be accessed
+const projectState = ProjectState.getInstance();
+
 //decorator
 function Autobind(
   _target: any,
@@ -159,7 +200,7 @@ class ProjecInput {
     //checking if the input is an array because a tuple doesn't really exist in TS/JS and a tuple in the end is an array. So, if this returns true, it means we have a tuple
     if (Array.isArray(userInput)) {
       const [title, description, people] = userInput;
-      console.log(title, description, people);
+      projectState.addProject(title, description, people);
     }
 
     this.clearInputs();
@@ -185,12 +226,14 @@ class ProjectList {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   element: HTMLElement; //section element doesn't exist so we use element
+  assignedProjects: any[];
 
   constructor(private status: "active" | "finished") {
     this.templateElement = document.getElementById(
       "project-list"
     )! as HTMLTemplateElement;
     this.hostElement = document.getElementById("app")! as HTMLDivElement;
+    this.assignedProjects = [];
 
     //render a form that belongs in the instance
     const importedNode = document.importNode(
@@ -200,8 +243,24 @@ class ProjectList {
     this.element = importedNode.firstElementChild as HTMLElement;
     this.element.id = `${this.status}-projects`;
 
+    projectState.addListener((projects: any[]) => {
+      this.assignedProjects = projects;
+      this.renderProjects();
+    });
+
     this.attach();
     this.renderContent();
+  }
+
+  private renderProjects() {
+    const listEl = document.getElementById(
+      `${this.status}-projects-list`
+    )! as HTMLUListElement;
+    for (const prjItem of this.assignedProjects) {
+      const listItem = document.createElement("li");
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
   }
 
   private renderContent() {
