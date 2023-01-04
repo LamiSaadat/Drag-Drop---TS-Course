@@ -180,4 +180,47 @@ class ProjecInput {
   }
 }
 
+//Project List Class
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLElement; //section element doesn't exist so we use element
+
+  constructor(private status: "active" | "finished") {
+    this.templateElement = document.getElementById(
+      "project-list"
+    )! as HTMLTemplateElement;
+    this.hostElement = document.getElementById("app")! as HTMLDivElement;
+
+    //render a form that belongs in the instance
+    const importedNode = document.importNode(
+      this.templateElement.content,
+      true
+    );
+    this.element = importedNode.firstElementChild as HTMLElement;
+    this.element.id = `${this.status}-projects`;
+
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderContent() {
+    //fill the blank spaces in the template with content
+
+    //add dynamic id to the unordered list
+    const listId = `${this.status}-projects-list`;
+    this.element.querySelector("ul")!.id = listId;
+    //create dynamic heading for the section
+    this.element.querySelector("h2")!.textContent =
+      this.status.toUpperCase() + " PROJECTS";
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement("beforeend", this.element);
+  }
+}
+
 const prjInput = new ProjecInput();
+//instantiate to create two lists
+const activePrjList = new ProjectList("active");
+const finishedPrjList = new ProjectList("finished");
