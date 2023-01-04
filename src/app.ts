@@ -16,6 +16,58 @@ function Autobind(
   return adjDescriptor;
 }
 
+//validation
+//define a valitable object
+interface Validatable {
+  value: string | number;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+}
+
+function validate(validatableInput: Validatable) {
+  let isValid = true;
+
+  //checking if these properties are set to the object or not
+  if (validatableInput.required) {
+    isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+  }
+
+  if (
+    validatableInput.minLength != null &&
+    typeof validatableInput.value === "string"
+  ) {
+    isValid =
+      isValid && validatableInput.value.length >= validatableInput.minLength;
+  }
+
+  if (
+    validatableInput.maxLength != null &&
+    typeof validatableInput.value === "string"
+  ) {
+    isValid =
+      isValid && validatableInput.value.length <= validatableInput.maxLength;
+  }
+
+  if (
+    validatableInput.min != null &&
+    typeof validatableInput.value === "number"
+  ) {
+    isValid = isValid && validatableInput.value >= validatableInput.min;
+  }
+
+  if (
+    validatableInput.max != null &&
+    typeof validatableInput.value === "number"
+  ) {
+    isValid = isValid && validatableInput.value <= validatableInput.max;
+  }
+
+  return isValid;
+}
+
 //Project Input Class
 class ProjecInput {
   templateElement: HTMLTemplateElement;
@@ -58,10 +110,32 @@ class ProjecInput {
     const enteredDescription = this.descriptionInputElement.value;
     const enteredPeople = this.peopleInputElement.value;
 
+    //construct the validatable object
+    const titleValidatable: Validatable = {
+      value: enteredTitle,
+      required: true,
+    };
+
+    const descriptionValidatable: Validatable = {
+      value: enteredDescription,
+      required: true,
+      minLength: 5,
+    };
+
+    const peopleValidatable: Validatable = {
+      value: enteredTitle,
+      required: true,
+      min: 1,
+      max: 5,
+    };
+
     if (
-      enteredTitle.trim().length === 0 ||
-      enteredDescription.trim().length === 0 ||
-      enteredPeople.trim().length === 0
+      // enteredTitle.trim().length === 0 ||
+      // enteredDescription.trim().length === 0 ||
+      // enteredPeople.trim().length === 0
+      !validate(titleValidatable) ||
+      !validate(descriptionValidatable) ||
+      !validate(peopleValidatable)
     ) {
       alert("Invalid input, please try again!");
       return; //return nothing because otherwise TS looks for a tuple to be returned and can't find it. Also add the void type as a return type
