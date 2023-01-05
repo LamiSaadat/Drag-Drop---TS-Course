@@ -1,3 +1,20 @@
+//Drag & Drop interfaces
+//add this interface to classes that renders an element that can be dragged --> ProjectItem
+interface Draggable {
+  dragStartHandler(event: DragEvent): void;
+  dragEndHandler(event: DragEvent): void;
+}
+
+//add this interface to classes where the dragged objects are dropped into --> ProjectList
+interface DragTarget {
+  //tells the browser the thing your dragging something over is a valid DragTarget
+  dragOverHandler(event: DragEvent): void;
+  //react to the drop
+  dropHandler(event: DragEvent): void;
+  //if we're giving visual feedback to the user when no drop happens
+  dragLeaveHandler(event: DragEvent): void;
+}
+
 //Project status
 enum ProjectStatus {
   Active,
@@ -55,6 +72,22 @@ class ProjectState extends State<Project> {
 
     for (const listenerFn of this.listeners) {
       //pass a copy of the array
+      listenerFn(this.projects.slice());
+    }
+  }
+
+  //update project status after dragged and dropped
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find((prj) => prj.id === projectId);
+
+    if (project && project.status !== newStatus) {
+      project.status = newStatus;
+      this.updateListeners();
+    }
+  }
+
+  private updateListeners() {
+    for (const listenerFn of this.listeners) {
       listenerFn(this.projects.slice());
     }
   }
@@ -269,7 +302,10 @@ class ProjecInput extends Component<HTMLDivElement, HTMLFormElement> {
 }
 
 //Project List Class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList
+  extends Component<HTMLDivElement, HTMLElement>
+  implements DragTarget
+{
   // templateElement: HTMLTemplateElement;
   // hostElement: HTMLDivElement;
   // element: HTMLElement; //section element doesn't exist so we use element
@@ -296,7 +332,37 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     }
   }
 
+  @Autobind
+  dragOverHandler(event: DragEvent) {
+    //does data exist and is the data format allowed
+    if (event.dataTransfer && event.dataTransfer.types[0] === "text/plain") {
+      //the default drag and drop is to not allow dropping. So we prevent it
+      event.preventDefault();
+      //then update the background
+      const listEl = this.element.querySelector("ul")!;
+      listEl.classList.add("droppable");
+    }
+  }
+
+  @Autobind
+  dropHandler(event: DragEvent) {
+    const prjId = event.dataTransfer!.getData("text/plain");
+    projectState.moveProject(
+      prjId,
+      this.status === "active" ? ProjectStatus.Active : ProjectStatus.Finished
+    );
+  }
+
+  @Autobind
+  dragLeaveHandler(_event: DragEvent) {
+    const listEl = this.element.querySelector("ul")!;
+    listEl.classList.remove("droppable");
+  }
+
   configure() {
+    this.element.addEventListener("dragover", this.dragOverHandler);
+    this.element.addEventListener("dragleave", this.dragLeaveHandler);
+    this.element.addEventListener("drop", this.dropHandler);
     //register a listener function
     //gets a list of projects
     projectState.addListener((projects: Project[]) => {
@@ -325,7 +391,10 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
   }
 }
 
-class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+class ProjectItem
+  extends Component<HTMLUListElement, HTMLLIElement>
+  implements Draggable
+{
   private project: Project;
 
   //transofrm data when you retrieve it
@@ -344,7 +413,23 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
     this.renderContent();
   }
 
-  configure() {}
+  @Autobind
+  dragStartHandler(event: DragEvent) {
+    //transfer then info in text format and the id so to identify the project
+    //transfer small amount of data to save memory
+    event.dataTransfer!.setData("text/plain", this.project.id);
+    //controls how the cursor looks like and tells the browser about our intentions. We can also use "copy"
+    event.dataTransfer!.effectAllowed = "move";
+  }
+
+  dragEndHandler(_event: DragEvent) {
+    console.log("DragEnd");
+  }
+
+  configure() {
+    this.element.addEventListener("dragstart", this.dragStartHandler);
+    this.element.addEventListener("dragend", this.dragEndHandler);
+  }
 
   renderContent() {
     this.element.querySelector("h2")!.textContent = this.project.title;
