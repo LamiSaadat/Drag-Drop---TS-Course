@@ -328,6 +328,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
   private project: Project;
 
+  //transofrm data when you retrieve it
   get persons() {
     return this.project.people === 1
       ? "1 person assigned"
